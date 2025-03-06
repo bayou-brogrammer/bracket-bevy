@@ -1,0 +1,101 @@
+---
+description: Rust Const Features and Compile-Time Evaluation Best Practices
+globs: *.rs
+alwaysApply: false
+---
+This rule enforces best practices for const generics, const functions, and compile-time evaluation in Rust.
+
+## Rule Details
+
+- **Pattern**: `*.rs`
+- **Severity**: Warning
+- **Category**: Type System and Performance
+
+## Checks
+
+1. **Const Generics Usage**
+   - Use const generics for array sizes and other compile-time constants
+   - Implement const trait bounds when appropriate
+   - Use const expressions in type positions
+   - Avoid runtime calculations when const evaluation is possible
+
+2. **Const Functions**
+   - Mark functions as `const` when they can be evaluated at compile time
+   - Use const functions for initialization of static values
+   - Implement const trait methods when possible
+   - Document const function requirements and limitations
+
+3. **Compile-Time Evaluation**
+   - Use const expressions for known values
+   - Leverage const evaluation for performance optimization
+   - Use const assertions for compile-time validation
+   - Implement const initialization patterns
+
+4. **Type-Level Programming**
+   - Use const generics for type-level numbers
+   - Implement const generic traits
+   - Use const expressions in where clauses
+   - Leverage type-level computation where appropriate
+
+## Examples
+
+### Good
+```rust
+// Using const generics for array sizes
+struct Matrix<const N: usize, const M: usize> {
+    data: [[f64; M]; N],
+}
+
+// Const function for compile-time computation
+const fn factorial<const N: u32>() -> u32 {
+    let mut result = 1;
+    let mut i = 1;
+    while i <= N {
+        result *= i;
+        i += 1;
+    }
+    result
+}
+
+// Type-level programming with const generics
+trait ArraySize<const N: usize> {
+    fn size(&self) -> usize {
+        N
+    }
+}
+
+// Const assertions for compile-time validation
+const _: () = assert!(factorial::<5>() == 120);
+```
+
+### Bad
+```rust
+// Runtime calculation when const would work
+fn array_size() -> usize {
+    5 // Should be const
+}
+
+// Missing const when possible
+fn simple_math(x: i32) -> i32 {
+    x + 1 // Could be const fn
+}
+
+// Not using const generics for fixed sizes
+struct FixedArray {
+    data: Vec<i32>, // Should use [i32; N] with const generic
+}
+```
+
+## Rationale
+
+Proper use of const features ensures:
+- Better compile-time guarantees
+- Improved runtime performance
+- Enhanced type safety
+- More expressive type-level programming
+
+## References
+
+- [Rust Reference - Const Generics](mdc:https:/doc.rust-lang.org/reference/items/generics.html#const-generics)
+- [Rust Reference - Const Evaluation](mdc:https:/doc.rust-lang.org/reference/const_eval.html)
+- [Rust RFC - Const Generics](mdc:https:/rust-lang.github.io/rfcs/2000-const-generics.html)

@@ -1,50 +1,77 @@
-mod components;
-mod map;
-mod monster;
-mod player;
-mod rect;
-mod render;
-mod visibility;
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
-use bevy::asset::AssetMetaCheck;
-use bevy::prelude::*;
+use bevy::{
+    asset::AssetMetaCheck,
+    prelude::*,
+    window::{WindowMode, WindowResolution},
+};
+
+use crate::{controller::ControllerPlugin, model::ModelPlugin, ui::UiPlugin, view::ViewPlugin};
+
+pub mod controller;
+#[cfg(feature = "dev")]
+pub mod dev;
+pub mod model;
+pub mod ui;
+pub mod view;
+
+mod app_constants;
+pub use self::app_constants::*;
+
+mod app_settings;
+pub use self::app_settings::*;
 
 fn main() {
-    App::new()
-        .add_plugins(
-            DefaultPlugins
-                .set(AssetPlugin {
-                    meta_check: AssetMetaCheck::Never,
-                    ..default()
-                })
-                .set(WindowPlugin {
-                    primary_window: Window {
-                        fit_canvas_to_parent: true,
-                        ..default()
-                    }
-                    .into(),
-                    ..default()
+    let mut app = App::new();
+
+    // Load AppSettings
+    let app_settings = AppSettings::default();
+
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: AppConstants::APP_NAME.to_string(),
+                    resolution: WindowResolution::new(
+                        app_settings.window_width(),
+                        app_settings.window_height(),
+                    ),
+                    mode: if app_settings.fullscreen() {
+                        WindowMode::BorderlessFullscreen(MonitorSelection::Current)
+                    } else {
+                        WindowMode::Windowed
+                    },
+                    ..Default::default()
                 }),
+                ..Default::default()
+            })
+            .set(AssetPlugin {
+                file_path: AppConstants::BASE.to_string(),
+                meta_check: AssetMetaCheck::Never,
+                ..Default::default()
+            })
+            .set(ImagePlugin::default_nearest()),
+    )
+    .init_state::<RunningState>()
+    .configure_sets(
+        Update,
+        (
+            AppSet::RecordInput,
+            AppSet::Visibility,
+            AppSet::Update,
+            AppSet::Render,
         )
-        .init_state::<RunningState>()
-        .configure_sets(
-            Update,
-            (
-                AppSet::RecordInput,
-                AppSet::Visibility,
-                AppSet::Update,
-                AppSet::Render,
-            )
-                .chain(),
-        )
-        .add_plugins((
-            map::plugin,
-            player::plugin,
-            visibility::plugin,
-            monster::plugin,
-            render::plugin,
-        ))
-        .run();
+            .chain(),
+    );
+
+    app.insert_resource(app_settings);
+
+    #[cfg(feature = "dev")]
+    app.add_plugins(crate::dev::DevPlugin);
+
+    app.add_plugins((ControllerPlugin, ModelPlugin, UiPlugin, ViewPlugin));
+
+    app.run();
 }
 
 #[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]

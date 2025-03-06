@@ -1,0 +1,109 @@
+---
+description: Rust Workspace and Multi-Crate Project Organization Best Practices
+globs: Cargo.toml
+alwaysApply: false
+---
+This rule enforces best practices for organizing Rust workspaces and multi-crate projects.
+
+## Rule Details
+
+- **Pattern**: `Cargo.toml`
+- **Severity**: Warning
+- **Category**: Project Structure
+
+## Checks
+
+1. **Workspace Structure**
+   - Organize related crates in a workspace
+   - Use meaningful crate names and directory structure
+   - Share common dependencies at workspace level
+   - Implement proper version management
+
+2. **Crate Organization**
+   - Split functionality into appropriate crates
+   - Use clear dependency boundaries
+   - Implement proper visibility rules
+   - Follow the principle of least privilege
+
+3. **Dependency Management**
+   - Use workspace-level dependency definitions
+   - Implement proper feature management
+   - Use version requirements appropriately
+   - Document dependency purposes
+
+4. **Build Configuration**
+   - Use workspace-level profiles
+   - Configure build settings appropriately
+   - Implement proper target configuration
+   - Use conditional compilation effectively
+
+## Examples
+
+### Good
+```toml
+# Root Cargo.toml
+[workspace]
+members = [
+    "core",
+    "cli",
+    "web",
+    "common"
+]
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+thiserror = "1.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+# core/Cargo.toml
+[package]
+name = "my-project-core"
+version = "0.1.0"
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+
+# cli/Cargo.toml
+[package]
+name = "my-project-cli"
+version = "0.1.0"
+
+[dependencies]
+my-project-core = { path = "../core" }
+tokio.workspace = true
+```
+
+### Bad
+```toml
+# Bad: No workspace organization
+[package]
+name = "monolithic-project"
+version = "0.1.0"
+
+[dependencies]
+# Bad: Duplicated dependencies across crates
+serde = "1.0"
+tokio = "1.0"
+
+# Bad: No version management
+some-crate = "*"
+```
+
+## Rationale
+
+Proper workspace organization ensures:
+- Clear project structure
+- Efficient dependency management
+- Better build times
+- Improved maintainability
+
+## References
+
+- [Cargo Workspaces](mdc:https:/doc.rust-lang.org/cargo/reference/workspaces.html)
+- [Rust Modules](mdc:https:/doc.rust-lang.org/book/ch07-00-managing-growing-projects-with-packages-crates-and-modules.html)
+- [Dependency Management](mdc:https:/doc.rust-lang.org/cargo/reference/specifying-dependencies.html)
