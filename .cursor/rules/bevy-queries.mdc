@@ -1,0 +1,135 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+# Bevy Query Optimization Best Practices
+This rule enforces best practices for optimizing queries in Bevy.
+
+## Rule Details
+
+- **Pattern**: `*.rs`
+- **Severity**: Warning
+- **Category**: Bevy Queries
+
+## Checks
+
+1. **Query Design**
+   - Use minimal component filters
+   - Implement change detection
+   - Use appropriate query filters
+   - Consider query frequency
+
+2. **Query Performance**
+   - Avoid nested queries
+   - Use batch processing
+   - Implement parallel queries
+   - Cache query results
+
+3. **Query Safety**
+   - Handle missing components
+   - Avoid query conflicts
+   - Document query requirements
+   - Use appropriate lifetimes
+
+4. **Query Organization**
+   - Group related queries
+   - Use query sets
+   - Consider component layout
+   - Document query relationships
+
+## Examples
+
+### Good
+```rust
+use bevy::prelude::*;
+
+/// Efficient query using change detection
+pub fn movement_system(
+    mut query: Query<(&mut Transform, &Velocity), Changed<Velocity>>,
+) {
+    for (mut transform, velocity) in query.iter_mut() {
+        transform.translation += velocity.0;
+    }
+}
+
+/// Query with proper filtering
+pub fn collision_system(
+    moving_entities: Query<(Entity, &Transform), With<Collider>>,
+    static_entities: Query<(Entity, &Transform, &Collider), Without<Movable>>,
+) {
+    for (entity_a, transform_a) in moving_entities.iter() {
+        for (entity_b, transform_b, collider) in static_entities.iter() {
+            if entity_a != entity_b {
+                // Check collisions
+            }
+        }
+    }
+}
+
+/// Parallel query processing
+#[derive(QueryData)]
+pub struct EntityData {
+    entity: Entity,
+    transform: &'static Transform,
+    velocity: &'static Velocity,
+}
+
+pub fn parallel_system(query: Query<EntityData>) {
+    query.par_iter().for_each(|data| {
+        // Process entities in parallel
+    });
+}
+```
+
+### Bad
+```rust
+// Bad: Inefficient nested queries
+pub fn inefficient_system(
+    outer_query: Query<Entity>,
+    inner_query: Query<&Transform>,
+) {
+    for entity in outer_query.iter() {
+        if let Ok(transform) = inner_query.get(entity) {
+            // Inefficient nested access
+        }
+    }
+}
+
+// Bad: Query with too many components
+pub fn bloated_query(
+    query: Query<(
+        &Transform,
+        &Velocity,
+        &Acceleration,
+        &Mass,
+        &Size,
+        &Color,
+        &Material,
+        // Too many components
+    )>,
+) {
+    // Implementation
+}
+
+// Bad: Missing error handling
+pub fn unsafe_query(
+    query: Query<&Transform>,
+) {
+    let transform = query.single().unwrap(); // Unsafe
+}
+```
+
+## Rationale
+
+Proper query optimization ensures:
+- Optimal performance
+- Efficient memory access
+- Clear component relationships
+- Safe concurrent access
+
+## References
+
+- [Bevy Query Documentation](mdc:https:/docs.rs/bevy/latest/bevy/ecs/system/struct.Query.html)
+- [Bevy Query Filters](mdc:https:/docs.rs/bevy/latest/bevy/ecs/query/trait.QueryFilter.html)
+- [Bevy ParallelSystemDescriptor](mdc:https:/docs.rs/bevy/latest/bevy/ecs/schedule/trait.IntoScheduleConfig.html)

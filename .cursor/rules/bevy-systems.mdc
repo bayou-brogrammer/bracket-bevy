@@ -1,0 +1,141 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+# Bevy Systems Best Practices
+This rule enforces best practices for implementing systems in Bevy.
+
+## Rule Details
+
+- **Pattern**: `*.rs`
+- **Severity**: Error
+- **Category**: Bevy Systems
+
+## Checks
+
+1. **System Parameters**
+   - Use minimal system parameters
+   - Order parameters for optimal performance
+   - Use appropriate parameter mutability
+   - Document parameter requirements
+
+2. **System Organization**
+   - Group related systems in sets
+   - Use appropriate run conditions
+   - Consider system ordering
+   - Document system dependencies
+
+3. **Query Design**
+   - Use efficient query filters
+   - Implement change detection
+   - Handle component absence
+   - Optimize query performance
+
+4. **System Safety**
+   - Avoid world queries in loops
+   - Handle errors gracefully
+   - Use appropriate lifetimes
+   - Document safety requirements
+
+## Examples
+
+### Good
+```rust
+use bevy::prelude::*;
+
+/// System for processing entity movement
+/// Requires Position and Velocity components
+pub fn movement_system(
+    time: Res<Time>,
+    mut query: Query<(&mut Position, &Velocity)>,
+) {
+    // Process all entities with both components
+    for (mut position, velocity) in query.iter_mut() {
+        position.x += velocity.x * time.delta_seconds();
+        position.y += velocity.y * time.delta_seconds();
+    }
+}
+
+/// System for handling collisions
+/// Uses change detection to optimize processing
+pub fn collision_system(
+    mut commands: Commands,
+    query: Query<(Entity, &Position), Changed<Position>>,
+    colliders: Query<(Entity, &Position, &Collider)>,
+) {
+    for (entity, position) in query.iter() {
+        for (other_entity, other_pos, collider) in colliders.iter() {
+            if entity != other_entity && position.distance(other_pos) < collider.radius {
+                commands.spawn(CollisionEvent {
+                    entity_a: entity,
+                    entity_b: other_entity,
+                });
+            }
+        }
+    }
+}
+
+/// Configuration for system sets
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum GameSet {
+    Input,
+    Movement,
+    Collision,
+    Render,
+}
+
+// System set configuration
+fn configure_sets(app: &mut App) {
+    app.configure_sets((
+        GameSet::Input,
+        GameSet::Movement,
+        GameSet::Collision,
+        GameSet::Render,
+    ).chain());
+}
+```
+
+### Bad
+```rust
+// Bad: Excessive system parameters
+pub fn bloated_system(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut query: Query<(&mut Transform, &mut Velocity)>,
+    // Too many parameters
+) {
+    // Implementation
+}
+
+// Bad: Inefficient query usage
+pub fn inefficient_system(world: &mut World) {
+    // Bad: Manual world query in loop
+    for i in 0..1000 {
+        if let Some(mut transform) = world.get_mut::<Transform>(Entity::from_raw(i)) {
+            // Processing
+        }
+    }
+}
+
+// Bad: Missing documentation and organization
+fn unnamed_system(query: Query<&Position>) {
+    // Undocumented system without clear purpose
+}
+```
+
+## Rationale
+
+Proper system implementation ensures:
+- Optimal performance
+- Clear system responsibilities
+- Predictable execution order
+- Safe concurrent execution
+
+## References
+
+- [Bevy Systems Documentation](mdc:https:/docs.rs/bevy/latest/bevy/ecs/system/trait.System.html)
+- [Bevy System Sets](mdc:https:/docs.rs/bevy/latest/bevy/ecs/schedule/trait.IntoScheduleConfig.html)
+- [Bevy Query Documentation](mdc:https:/docs.rs/bevy/latest/bevy/ecs/system/struct.Query.html)

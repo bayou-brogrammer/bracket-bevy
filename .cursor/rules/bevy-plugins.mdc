@@ -1,0 +1,170 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+# Bevy Plugin Organization Best Practices
+This rule enforces best practices for organizing plugins in Bevy.
+
+## Rule Details
+
+- **Pattern**: `*.rs`
+- **Severity**: Warning
+- **Category**: Bevy Plugins
+
+## Checks
+
+1. **Plugin Design**
+   - Keep plugins focused
+   - Implement proper initialization
+   - Document plugin dependencies
+   - Handle plugin cleanup
+
+2. **Plugin Organization**
+   - Group related systems
+   - Use appropriate sets
+   - Consider plugin ordering
+   - Document plugin relationships
+
+3. **Plugin Configuration**
+   - Use builder pattern
+   - Implement configuration resources
+   - Document configuration options
+   - Handle default values
+
+4. **Plugin Testing**
+   - Test plugin initialization
+   - Verify system execution
+   - Test configuration options
+   - Document test requirements
+
+## Examples
+
+### Good
+```rust
+use bevy::prelude::*;
+
+/// Configuration for the physics plugin
+#[derive(Resource)]
+pub struct PhysicsConfig {
+    pub gravity: Vec2,
+    pub time_step: f32,
+}
+
+impl Default for PhysicsConfig {
+    fn default() -> Self {
+        Self {
+            gravity: Vec2::new(0.0, -9.81),
+            time_step: 1.0 / 60.0,
+        }
+    }
+}
+
+/// Physics plugin implementing 2D physics
+pub struct PhysicsPlugin {
+    config: PhysicsConfig,
+}
+
+impl PhysicsPlugin {
+    pub fn new(config: PhysicsConfig) -> Self {
+        Self { config }
+    }
+}
+
+impl Plugin for PhysicsPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(self.config.clone())
+            .add_systems(Startup, setup_physics)
+            .add_systems(
+                FixedUpdate,
+                (
+                    apply_gravity,
+                    update_velocity,
+                    update_position,
+                ).chain(),
+            );
+    }
+}
+
+/// Plugin set for organizing related plugins
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum PhysicsSet {
+    Forces,
+    Integration,
+    Collision,
+}
+
+/// Main game plugin composing multiple sub-plugins
+pub struct GamePlugin;
+
+impl Plugin for GamePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((
+            PhysicsPlugin::default(),
+            RenderPlugin::default(),
+            AudioPlugin::default(),
+        ))
+        .configure_sets((
+            PhysicsSet::Forces,
+            PhysicsSet::Integration,
+            PhysicsSet::Collision,
+        ).chain());
+    }
+}
+```
+
+### Bad
+```rust
+// Bad: Plugin with too many responsibilities
+pub struct MonolithicPlugin;
+
+impl Plugin for MonolithicPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_systems(Update, (
+                physics_system,
+                rendering_system,
+                audio_system,
+                input_system,
+                ai_system,
+                // Too many unrelated systems
+            ));
+    }
+}
+
+// Bad: Missing configuration options
+pub struct UnconfigurablePlugin;
+
+impl Plugin for UnconfigurablePlugin {
+    fn build(&self, app: &mut App) {
+        // Hardcoded values without configuration
+        app.insert_resource(Settings {
+            value: 42,
+        });
+    }
+}
+
+// Bad: Unclear plugin dependencies
+pub struct DependentPlugin;
+
+impl Plugin for DependentPlugin {
+    fn build(&self, app: &mut App) {
+        // Missing dependency checks
+        app.add_systems(Update, dependent_system);
+    }
+}
+```
+
+## Rationale
+
+Proper plugin organization ensures:
+- Clear code structure
+- Maintainable architecture
+- Efficient system organization
+- Easy configuration
+
+## References
+
+- [Bevy Plugin Documentation](mdc:https:/docs.rs/bevy/latest/bevy/app/trait.Plugin.html)
+- [Bevy App Builder](mdc:https:/docs.rs/bevy/latest/bevy/app/struct.App.html)
+- [Bevy Plugin Guidelines](mdc:https:/bevy-cheatbook.github.io/programming/plugins.html)

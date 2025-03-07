@@ -22,6 +22,7 @@ src/
 │   ├── commands/          # Command pattern implementations
 │   ├── components/        # ECS components for input handling
 │   ├── events/            # Event definitions for input
+│   ├── event_systems/     # Event systems for input handling
 │   ├── resources/         # Resources for input state
 │   ├── systems/           # Systems for processing input
 │   └── controller_plugin.rs # Plugin registration

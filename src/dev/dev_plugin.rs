@@ -8,9 +8,9 @@ pub struct DevPlugin;
 impl Plugin for DevPlugin {
     fn build(&self, app: &mut App) {
         // Bevy Inspector
-        app.add_plugins((DefaultInspectorConfigPlugin, WorldInspectorPlugin::new()));
+        // app.add_plugins((DefaultInspectorConfigPlugin, WorldInspectorPlugin::new()));
 
         // Frame Diagnostics
-        app.add_plugins((FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin::default()));
+        // app.add_plugins((FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin::default()));
     }
 }

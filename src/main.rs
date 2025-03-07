@@ -1,4 +1,12 @@
-#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+#![warn(
+    clippy::too_many_lines,
+    clippy::if_not_else,
+    clippy::explicit_iter_loop,
+    clippy::explicit_into_iter_loop,
+    clippy::exit,
+    clippy::else_if_without_else,
+    clippy::dbg_macro
+)]
 
 use bevy::{
     asset::AssetMetaCheck,

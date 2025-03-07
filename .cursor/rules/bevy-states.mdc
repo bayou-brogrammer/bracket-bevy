@@ -1,0 +1,136 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+# Bevy State Management Best Practices
+This rule enforces best practices for managing game states in Bevy.
+
+## Rule Details
+
+- **Pattern**: `*.rs`
+- **Severity**: Warning
+- **Category**: Bevy States
+
+## Checks
+
+1. **State Design**
+   - Use appropriate state types
+   - Implement state transitions
+   - Document state lifecycle
+   - Handle state cleanup
+
+2. **State Organization**
+   - Group related states
+   - Use state stack when needed
+   - Consider state hierarchies
+   - Document state relationships
+
+3. **State Systems**
+   - Use appropriate run conditions
+   - Handle state transitions
+   - Implement state-specific systems
+   - Document system requirements
+
+4. **State Resources**
+   - Manage state-specific resources
+   - Handle resource cleanup
+   - Document resource dependencies
+   - Consider state persistence
+
+## Examples
+
+### Good
+```rust
+use bevy::prelude::*;
+
+/// Game states enum
+#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+pub enum GameState {
+    #[default]
+    Loading,
+    MainMenu,
+    Playing,
+    Paused,
+}
+
+/// State-specific system with run condition
+pub fn menu_system(
+    mut commands: Commands,
+    keyboard: Res<Input<KeyCode>>,
+) -> Option<GameState> {
+    if keyboard.just_pressed(KeyCode::Return) {
+        Some(GameState::Playing)
+    } else {
+        None
+    }
+}
+
+/// State transition system
+pub fn setup_game(
+    mut commands: Commands,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    // Setup game resources
+    commands.spawn(/* ... */);
+    
+    // Transition to playing state
+    next_state.set(GameState::Playing);
+}
+
+/// Plugin implementing state management
+pub struct GameStatePlugin;
+
+impl Plugin for GameStatePlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_state::<GameState>()
+            .add_systems(OnEnter(GameState::Loading), setup_loading)
+            .add_systems(OnEnter(GameState::Playing), setup_game)
+            .add_systems(OnExit(GameState::Playing), cleanup_game)
+            .add_systems(
+                Update,
+                menu_system.run_if(in_state(GameState::MainMenu)),
+            );
+    }
+}
+```
+
+### Bad
+```rust
+// Bad: Global state without proper transitions
+static mut GAME_STATE: u32 = 0;
+
+// Bad: State-dependent system without proper conditions
+pub fn unsafe_state_system(
+    mut commands: Commands,
+) {
+    unsafe {
+        if GAME_STATE == 1 {
+            // Unsafe state access
+        }
+    }
+}
+
+// Bad: Missing state cleanup
+pub fn state_transition(
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    // Missing cleanup before transition
+    next_state.set(GameState::Playing);
+}
+```
+
+## Rationale
+
+Proper state management ensures:
+- Clear game flow
+- Predictable transitions
+- Efficient resource management
+- Clean state organization
+
+## References
+
+- [Bevy State Documentation](mdc:https:/docs.rs/bevy/latest/bevy/ecs/schedule/state/struct.State.html)
+- [Bevy State Guide](mdc:https:/bevy-cheatbook.github.io/programming/states.html)
+- [Bevy App States](mdc:https:/bevy-cheatbook.github.io/programming/app-builder.html)

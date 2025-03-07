@@ -1,0 +1,137 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Bevy Event Handling Best Practices
+This rule enforces best practices for handling events in Bevy.
+
+## Rule Details
+
+- **Pattern**: `*.rs`
+- **Severity**: Warning
+- **Category**: Bevy Events
+
+## Checks
+
+1. **Event Design**
+   - Keep events focused
+   - Use appropriate data types
+   - Document event purpose
+   - Consider event lifecycle
+
+2. **Event Handling**
+   - Process events efficiently
+   - Handle event ordering
+   - Clean up old events
+   - Document handler requirements
+
+3. **Event Systems**
+   - Use appropriate readers
+   - Handle event queues
+   - Consider event timing
+   - Document system dependencies
+
+4. **Event Organization**
+   - Group related events
+   - Use appropriate scope
+   - Consider event relationships
+   - Document event flow
+
+## Examples
+
+### Good
+```rust
+use bevy::prelude::*;
+
+/// Event for entity collision
+#[derive(Event)]
+pub struct CollisionEvent {
+    pub entity_a: Entity,
+    pub entity_b: Entity,
+    pub point: Vec2,
+}
+
+/// Event for player actions
+#[derive(Event)]
+pub struct PlayerActionEvent {
+    pub action: PlayerAction,
+    pub timestamp: f64,
+}
+
+/// System for handling collision events
+pub fn collision_handler(
+    mut collision_events: EventReader<CollisionEvent>,
+    mut commands: Commands,
+) {
+    for collision in collision_events.iter() {
+        // Process collision
+        commands.entity(collision.entity_a)
+            .insert(DamageEffect::new(10));
+    }
+}
+
+/// Plugin setting up event handling
+pub struct GameEventsPlugin;
+
+impl Plugin for GameEventsPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_event::<CollisionEvent>()
+            .add_event::<PlayerActionEvent>()
+            .add_systems(Update, (
+                collision_handler,
+                player_action_handler,
+            ));
+    }
+}
+```
+
+### Bad
+```rust
+// Bad: Event with too much data
+#[derive(Event)]
+pub struct GameStateEvent {
+    player_position: Vec2,
+    player_health: f32,
+    inventory: Vec<Item>,
+    score: u32,
+    // Too much unrelated data
+}
+
+// Bad: Inefficient event handling
+pub fn inefficient_handler(
+    mut events: EventReader<GameEvent>,
+    query: Query<&mut Transform>,
+) {
+    for event in events.iter() {
+        for mut transform in query.iter_mut() {
+            // Processing every entity for every event
+        }
+    }
+}
+
+// Bad: Missing event cleanup
+pub fn event_spam(
+    mut events: EventWriter<DebugEvent>,
+) {
+    // Spamming events without cleanup
+    for _ in 0..1000 {
+        events.send(DebugEvent);
+    }
+}
+```
+
+## Rationale
+
+Proper event handling ensures:
+- Clear communication flow
+- Efficient event processing
+- Predictable behavior
+- Clean architecture
+
+## References
+
+- [Bevy Event Documentation](mdc:https:/docs.rs/bevy/latest/bevy/ecs/event/struct.Events.html)
+- [Bevy Event Guide](mdc:https:/bevy-cheatbook.github.io/programming/events.html)
+- [Bevy Event Systems](mdc:https:/bevy-cheatbook.github.io/programming/systems.html)

@@ -1,0 +1,107 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+# Bevy Entity Commands Best Practices
+This rule enforces best practices for implementing and using Entity Commands in Bevy.
+
+## Rule Details
+
+- **Pattern**: `*.rs`
+- **Severity**: Error
+- **Category**: Bevy Entity Commands
+
+## Checks
+
+1. **Command Implementation**
+   - Implement `EntityCommand` trait for custom commands
+   - Use `SystemState` for resource and query access
+   - Handle error cases gracefully
+   - Document command behavior and side effects
+
+2. **Resource Access**
+   - Use appropriate system parameters in `SystemState`
+   - Minimize resource contention
+   - Handle missing resources gracefully
+   - Use `ResMut` only when necessary
+
+3. **Query Usage**
+   - Use focused queries with minimal components
+   - Handle missing components gracefully
+   - Avoid multiple mutable queries when possible
+   - Document query requirements
+
+4. **Error Handling**
+   - Use `Result` or logging for errors
+   - Provide meaningful error messages
+   - Handle component absence gracefully
+   - Document error conditions
+
+## Examples
+
+### Good
+```rust
+use bevy::prelude::*;
+
+pub struct TryMove(pub Direction);
+
+impl EntityCommand for TryMove {
+    fn apply(self, entity: Entity, world: &mut World) {
+        let mut state: SystemState<(
+            Res<Map>,
+            ResMut<GameLog>,
+            Query<&mut Position>
+        )> = SystemState::new(world);
+
+        let (map, mut log, mut positions) = state.get_mut(world);
+
+        // Handle missing components gracefully
+        let Ok(mut pos) = positions.get_mut(entity) else {
+            log.add_entry("Entity cannot move: missing position");
+            return;
+        };
+
+        // Calculate new position
+        let new_pos = *pos + self.0.delta();
+
+        // Validate movement
+        if map.is_walkable(new_pos) {
+            *pos = new_pos;
+            log.add_entry(format!("Moved {:?}", self.0));
+        } else {
+            log.add_entry("Cannot move there");
+        }
+    }
+}
+```
+
+### Bad
+```rust
+impl EntityCommand for BadMove {
+    fn apply(self, entity: Entity, world: &mut World) {
+        // Bad: Unwrapping without error handling
+        let pos = world.get_mut::<Position>(entity).unwrap();
+        
+        // Bad: Direct world access without SystemState
+        let map = world.resource::<Map>();
+        
+        // Bad: No validation or error handling
+        *pos = Position::new(self.x, self.y);
+    }
+}
+```
+
+## Rationale
+
+Proper Entity Command implementation ensures:
+- Safe and predictable entity manipulation
+- Clear error handling and logging
+- Efficient resource access
+- Thread-safe component manipulation
+
+## References
+
+- [Bevy Commands Documentation](mdc:https:/docs.rs/bevy/latest/bevy/ecs/system/trait.Command.html)
+- [Bevy SystemState Documentation](mdc:https:/docs.rs/bevy/latest/bevy/ecs/system/struct.SystemState.html)
+- [Bevy ECS Guide](mdc:https:/bevy-cheatbook.github.io/programming/commands.html)

@@ -1,0 +1,115 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+# Bevy Component Design Best Practices
+This rule enforces best practices for designing and implementing components in Bevy.
+
+## Rule Details
+
+- **Pattern**: `*.rs`
+- **Severity**: Error
+- **Category**: Bevy Components
+
+## Checks
+
+1. **Component Design**
+   - Keep components small and focused
+   - Use appropriate derive macros
+   - Implement Debug for debugging
+   - Document component purpose and usage
+
+2. **Component Storage**
+   - Choose appropriate component storage
+   - Use `#[component(storage = "SparseSet")]` when needed
+   - Consider component frequency
+   - Optimize memory layout
+
+3. **Component Relationships**
+   - Use marker components appropriately
+   - Document component dependencies
+   - Consider component grouping
+   - Use bundles for related components
+
+4. **Component Lifecycle**
+   - Handle component addition/removal
+   - Clean up resources properly
+   - Document lifecycle requirements
+   - Consider component initialization
+
+## Examples
+
+### Good
+```rust
+use bevy::prelude::*;
+
+/// Represents the position of an entity in 2D space.
+/// Used for movement and collision detection.
+#[derive(Component, Debug, Clone, Copy)]
+pub struct Position {
+    pub x: i32,
+    pub y: i32,
+}
+
+impl Position {
+    pub fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+
+    pub fn manhattan_distance(&self, other: &Position) -> i32 {
+        (self.x - other.x).abs() + (self.y - other.y).abs()
+    }
+}
+
+/// Marker component for entities that can move.
+#[derive(Component, Debug)]
+pub struct Movable;
+
+/// Bundle for creating basic game entities
+#[derive(Bundle)]
+pub struct CreatureBundle {
+    position: Position,
+    movable: Movable,
+    sprite: SpriteBundle,
+    // Add other common components
+}
+```
+
+### Bad
+```rust
+// Bad: Too many responsibilities in one component
+#[derive(Component)]
+pub struct EntityState {
+    position: (i32, i32),
+    health: i32,
+    inventory: Vec<Item>,
+    movement_speed: f32,
+    // Too many unrelated fields
+}
+
+// Bad: Missing documentation and derives
+#[derive(Component)]
+struct UndocumentedComponent {
+    data: Vec<u8>,
+}
+
+// Bad: Inappropriate storage attribute
+#[derive(Component)]
+#[component(storage = "SparseSet")] // Used on a common component
+pub struct CommonPosition(pub Vec2);
+```
+
+## Rationale
+
+Proper component design ensures:
+- Efficient memory usage
+- Clear component responsibilities
+- Easy debugging and maintenance
+- Optimal performance
+
+## References
+
+- [Bevy Component Documentation](mdc:https:/docs.rs/bevy/latest/bevy/ecs/component/trait.Component.html)
+- [Bevy ECS Book](mdc:https:/bevy-cheatbook.github.io/programming/components.html)
+- [Bevy Design Patterns](mdc:https:/bevy-cheatbook.github.io/patterns/generic-systems.html)

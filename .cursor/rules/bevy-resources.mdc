@@ -1,0 +1,137 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+# Bevy Resource Management Best Practices
+This rule enforces best practices for managing resources in Bevy.
+
+## Rule Details
+
+- **Pattern**: `*.rs`
+- **Severity**: Error
+- **Category**: Bevy Resources
+
+## Checks
+
+1. **Resource Design**
+   - Keep resources focused and minimal
+   - Use appropriate initialization
+   - Document resource purpose
+   - Consider thread safety
+
+2. **Resource Access**
+   - Use appropriate access patterns
+   - Handle missing resources
+   - Minimize resource contention
+   - Use `Local` for system-local data
+
+3. **Resource Lifecycle**
+   - Initialize resources properly
+   - Clean up resources when needed
+   - Handle resource updates
+   - Document dependencies
+
+4. **Resource Organization**
+   - Group related resources
+   - Use appropriate scope
+   - Consider state management
+   - Document relationships
+
+## Examples
+
+### Good
+```rust
+use bevy::prelude::*;
+
+/// Game state resource containing core game data
+#[derive(Resource, Debug)]
+pub struct GameState {
+    pub score: u32,
+    pub level: u32,
+    pub is_paused: bool,
+}
+
+impl Default for GameState {
+    fn default() -> Self {
+        Self {
+            score: 0,
+            level: 1,
+            is_paused: false,
+        }
+    }
+}
+
+/// System demonstrating proper resource usage
+pub fn update_game_state(
+    time: Res<Time>,
+    mut game_state: ResMut<GameState>,
+) {
+    if !game_state.is_paused {
+        // Update game state
+        game_state.score += 1;
+    }
+}
+
+/// Resource for managing game configuration
+#[derive(Resource)]
+pub struct GameConfig {
+    difficulty: f32,
+    max_players: u32,
+}
+
+impl GameConfig {
+    pub fn new(difficulty: f32, max_players: u32) -> Self {
+        Self {
+            difficulty,
+            max_players,
+        }
+    }
+}
+```
+
+### Bad
+```rust
+// Bad: Resource with too many responsibilities
+#[derive(Resource)]
+pub struct GlobalState {
+    player_positions: Vec<Vec2>,
+    inventory_items: Vec<Item>,
+    game_score: u32,
+    settings: GameSettings,
+    // Too many unrelated fields
+}
+
+// Bad: Direct resource access without error handling
+pub fn unsafe_system(
+    state: Res<GameState>,
+) {
+    // Missing resource existence check
+    println!("Score: {}", state.score);
+}
+
+// Bad: Excessive resource usage
+pub fn resource_heavy_system(
+    mut commands: Commands,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut textures: ResMut<Assets<Image>>,
+    // Too many resource parameters
+) {
+    // Implementation
+}
+```
+
+## Rationale
+
+Proper resource management ensures:
+- Efficient state management
+- Clear data ownership
+- Thread-safe access
+- Optimal performance
+
+## References
+
+- [Bevy Resource Documentation](mdc:https:/docs.rs/bevy/latest/bevy/ecs/system/struct.Res.html)
+- [Bevy ECS Guide](mdc:https:/bevy-cheatbook.github.io/programming/res.html)
+- [Bevy State Management](mdc:https:/bevy-cheatbook.github.io/programming/states.html)
